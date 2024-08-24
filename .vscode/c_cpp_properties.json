@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "xv6",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "E:/xv6/xv6-labs-2021/kernel",
+                "E:/xv6/xv6-labs-2021/user"
+            ],
+            "defines": [],
+            "compilerPath": "C:/Program Files/mingw64/bin/gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
