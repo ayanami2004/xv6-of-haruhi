@@ -17,12 +17,12 @@ int main()
     {
         write(fd[1], "ping\n", MSGSIZE);
         read(fd[0], buf, MSGSIZE);
-        printf("F received：%s", buf);
+        printf("3: received %s", buf);
     }
     else
     {
         read(fd[0], buf, MSGSIZE);
-        printf("S received：%s", buf);
+        printf("4: received %s", buf);
         write(fd[1], "pong\n", MSGSIZE);
     }
     exit(0);

@@ -2,39 +2,25 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 #include "kernel/fs.h"
+#include "kernel/fcntl.h"
 
-char *
-fmtname(char *path)
+void find(char *path, char *target_file);
+
+int main(int argc, char **argv)
 {
-    static char buf[DIRSIZ + 1];
-    char *p;
-
-    // Find first character after last slash.
-    for (p = path + strlen(path); p >= path && *p != '/'; p--)
-        ;
-    p++;
-
-    // Return blank-padded name.
-    if (strlen(p) >= DIRSIZ)
-        return p;
-    memmove(buf, p, strlen(p));
-    memset(buf + strlen(p), 0, DIRSIZ - strlen(p));
-    return buf;
-}
-int NoRecurse(char *path)
-{
-    char *buf = fmtname(path);
-    if (buf[0] == '.' && buf[1] == 0)
+    if (argc != 3)
     {
-        return 1;
+        fprintf(2, "error:You need pass in only 2 arguments\n");
+        exit(1);
     }
-    if (buf[0] == '.' && buf[1] == '.' && buf[2] == 0)
-    {
-        return 1;
-    }
+    char *target_path = argv[1];
+    char *target_file = argv[2];
+    find(target_path, target_file);
+    exit(0);
     return 0;
 }
-void find(char *path, char *target)
+
+void find(char *path, char *target_file)
 {
     char buf[512], *p;
     int fd;
@@ -46,26 +32,18 @@ void find(char *path, char *target)
         fprintf(2, "find: cannot open %s\n", path);
         return;
     }
-
     if (fstat(fd, &st) < 0)
     {
         fprintf(2, "find: cannot stat %s\n", path);
         close(fd);
         return;
     }
-
-    // 判断路径与目标是否相等
-    if (strcmp(fmtname(path), target) == 0)
-    {
-        printf("%s\n", path);
-    }
-
     switch (st.type)
     {
-    case T_FILE: // type_file
-        // printf("path:%s ,fmtname(path):%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
+    case T_FILE:
+        fprintf(2, "Usage: find dir file\n"); // 应输入文件夹
+        exit(1);
         break;
-
     case T_DIR:
         if (strlen(path) + 1 + DIRSIZ + 1 > sizeof buf)
         {
@@ -77,46 +55,29 @@ void find(char *path, char *target)
         *p++ = '/';
         while (read(fd, &de, sizeof(de)) == sizeof(de))
         {
-            if (de.inum == 0)
+            // 不能进入.和..
+            if (de.inum == 0 || strcmp(de.name, ".") == 0 || strcmp(de.name, "..") == 0)
                 continue;
-            memmove(p, de.name, DIRSIZ);
+            memmove(p, de.name, DIRSIZ); // 文件夹下的文件名加入
             p[DIRSIZ] = 0;
             if (stat(buf, &st) < 0)
             {
                 printf("find: cannot stat %s\n", buf);
                 continue;
             }
-            // printf("buf %s , fmtname(buf): %s %d %d %d\n",buf,fmtname(buf),st.type,st.ino,st.size);
-            // if (strcmp(fmtname(buf), target) == 0)
-            //{
-            // printf("%s\n", buf);
-            //}
-            if (NoRecurse(buf) == 0)
+            if (st.type == T_DIR)
             {
-                find(buf, target);
+                find(buf, target_file);
+            }
+            else if (st.type == T_FILE)
+            {
+                if (strcmp(de.name, target_file) == 0)
+                {
+                    printf("%s\n", buf);
+                }
             }
         }
         break;
     }
     close(fd);
-}
-
-int main(int argc, char *argv[])
-{
-    if (argc == 1) // 没有参数输入，输出用法
-    {
-        printf("usage: find [path] [target]\n");
-    }
-    if (argc == 2)
-    {
-        find(".", argv[1]);
-        exit(0);
-    }
-    if (argc == 3)
-    {
-        find(argv[1], argv[2]);
-        exit(0);
-    }
-
-    exit(0);
 }
